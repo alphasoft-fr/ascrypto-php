@@ -4,10 +4,14 @@ namespace Test\AlphaSoft\AsCrypto;
 
 use AlphaSoft\AsCrypto\AsCrypto;
 use PHPUnit\Framework\TestCase;
+use Random\RandomException;
 
 class AsCryptoTest extends TestCase
 {
 
+    /**
+     * @throws RandomException
+     */
     public function testEncryptDecrypt(): void
     {
         $crypto = new AsCrypto();

@@ -13,6 +13,7 @@ final class AsCrypto
      * @var string The cipher method used for encryption and decryption.
      */
     private string $cipherMethod;
+    private int $pbkdf2Iterations;
 
     /**
      * AsCrypto constructor.
@@ -81,8 +82,7 @@ final class AsCrypto
         $ciphertext = substr($ciphertextDecoded, $ivSize);
 
         $key = $this->generateKey($password, $iv);
-        $hmacFromCiphertext = hash_hmac('sha256', $ciphertext, $key);
-        if (!hash_equals($hmac, $hmacFromCiphertext)) {
+        if (!hash_equals($hmac, hash_hmac('sha256', $ciphertext, $key))) {
             throw new \RuntimeException('Decryption failed');
         }
 
@@ -103,6 +103,6 @@ final class AsCrypto
      */
     private function generateKey(string $password, string $iv): string
     {
-        return hash_pbkdf2('sha256', $password, $iv, 10000, 32, false);
+        return openssl_pbkdf2($password, $iv, 32, 1000, 'sha256');
     }
 }
