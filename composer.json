@@ -1,0 +1,32 @@
+{
+  "name": "alphasoft-fr/ascrypto-php",
+  "description": "ASCrypto is an encryption library that offers a secure solution for encrypting and decrypting data using only a password, eliminating the need for key management.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "F. Michel"
+    },
+    {
+      "name": "Alpha Soft",
+      "homepage": "https://www.alpha-soft.fr"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "AlphaSoft\\AsCrypto\\": "src",
+      "Test\\AlphaSoft\\AsCrypto\\": "tests"
+    }
+  },
+  "require": {
+    "php": ">=7.4"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.4"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": false
+    }
+  }
+}
