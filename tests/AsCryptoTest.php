@@ -11,7 +11,12 @@ class AsCryptoTest extends TestCase
     public function testEncryptDecrypt(): void
     {
         $crypto = new AsCrypto();
-        $plaintext = bin2hex(random_bytes(128));
+        $data = [];
+        for ($i = 0; $i < 10; $i++) {
+            $data[bin2hex(random_bytes(16))] = bin2hex(random_bytes(64));
+        }
+
+        $plaintext = json_encode($data);
         $password = uniqid();
 
         $ciphertext = $crypto->encrypt($plaintext, $password);

@@ -41,35 +41,39 @@ final class AsCrypto
     public function encrypt(string $plaintext, string $password): string
     {
         $ivSize = openssl_cipher_iv_length($this->cipherMethod);
-        $iv = openssl_random_pseudo_bytes($ivSize);
+        if ($ivSize < 1) {
+            $iv = '';
+        }else {
+            $iv = openssl_random_pseudo_bytes($ivSize);
+        }
 
         $key = $this->generateKey($password, $iv);
 
-        $ciphertext = openssl_encrypt($plaintext, $this->cipherMethod, $key, 0, $iv);
-        if ($ciphertext === false) {
+        $ciphertext = openssl_encrypt(gzcompress($plaintext), $this->cipherMethod, $key, OPENSSL_RAW_DATA, $iv);
+        if (!$ciphertext) {
             throw new \RuntimeException('Encryption failed');
         }
 
-        return $this->cipherMethod . ';'. base64_encode(sprintf('%s%s', $iv, $ciphertext));
+        $hmac = hash_hmac('sha256', $ciphertext, $key);
+        return sprintf('%s;%s;%s', $this->cipherMethod, $hmac, base64_encode($iv.$ciphertext));
     }
 
 
     /**
      * Decrypts the given ciphertext using the provided password.
      *
-     * @param string $ciphertextBase64 The base64 encoded ciphertext to decrypt.
+     * @param string $encryptedText The base64 encoded ciphertext to decrypt.
      * @param string $password The password to use for decryption.
      * @return string The decrypted plaintext.
      * @throws \InvalidArgumentException If the cipher method is invalid.
      */
-    public function decrypt(string $ciphertextBase64, string $password): string
+    public function decrypt(string $encryptedText, string $password): string
     {
-        [$cipherMethod, $textBase64] = explode(';', $ciphertextBase64, 2) + [null, null];
+        [$cipherMethod, $hmac, $textBase64] = explode(';', $encryptedText, 3) + [null, null, null];
         if (!in_array($cipherMethod, openssl_get_cipher_methods())) {
             throw new \InvalidArgumentException('Invalid cipher method');
         }
 
-        $textBase64 = explode(';', $ciphertextBase64)[1] ?? null;
         $ciphertextDecoded = base64_decode($textBase64);
 
         $ivSize = openssl_cipher_iv_length($cipherMethod);
@@ -77,13 +81,17 @@ final class AsCrypto
         $ciphertext = substr($ciphertextDecoded, $ivSize);
 
         $key = $this->generateKey($password, $iv);
-
-        $value = openssl_decrypt($ciphertext, $cipherMethod, $key, 0, $iv);
-        if ($value === false) {
+        $hmacFromCiphertext = hash_hmac('sha256', $ciphertext, $key);
+        if (!hash_equals($hmac, $hmacFromCiphertext)) {
             throw new \RuntimeException('Decryption failed');
         }
 
-        return $value;
+        $plaintext = openssl_decrypt($ciphertext, $cipherMethod, $key, OPENSSL_RAW_DATA, $iv);
+        if ($plaintext === false) {
+            throw new \RuntimeException('Decryption failed');
+        }
+
+        return gzuncompress($plaintext);
     }
 
     /**
@@ -95,6 +103,6 @@ final class AsCrypto
      */
     private function generateKey(string $password, string $iv): string
     {
-        return hash_pbkdf2('sha256', $password, $iv, 10000, 32, true);
+        return hash_pbkdf2('sha256', $password, $iv, 10000, 32, false);
     }
 }
